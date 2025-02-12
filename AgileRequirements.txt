@@ -1,0 +1,54 @@
+# GiggleGit Agile Requirements
+
+## Theme:
+Get GiggleGit demo into a stable enough alpha to start onboarding some adventurous clients.
+
+## Epic:
+Onboarding experience.
+
+## User Stories:
+
+1. **As a vanilla Git power-user that has never seen GiggleGit before,**  
+   I want to use basic version control features (commit, push, pull, merge) without confusion,  
+   so that I can determine if GiggleGit works for my needs.
+
+   - **Task:** Ensure core Git features feel intuitive.  
+     - **Ticket 1: Improve command-line help messages**  
+       - Display onboarding tips when running Git commands.  
+       - Provide links to documentation for first-time users.  
+     - **Ticket 2: Implement alias support for common Git commands**  
+       - Allow users to configure custom aliases for commands.  
+       - Ensure aliases persist across sessions.  
+
+2. **As a team lead onboarding an experienced GiggleGit user,**  
+   I want to set up a repository and invite my teammate,  
+   so that we can start using GiggleGit together.
+
+   - **Task:** Provide clear onboarding for team leads.  
+     - **Ticket 1: Create a repository setup wizard**  
+       - Allow users to initialize a new repo with guided steps.  
+       - Offer an option to invite teammates during setup.  
+     - **Ticket 2: Implement an access control system**  
+       - Enable role-based permissions (admin, contributor, viewer).  
+       - Ensure repository owners can modify access levels.  
+
+3. **As a developer learning about meme-based merges,**  
+   I want to preview the memes before finalizing a merge,  
+   so that I understand what will happen.
+
+   - **Task:** Implement a meme-based merge preview.  
+     - **Ticket 1: Create a UI for meme previews**  
+       - Display the selected memes before merging.  
+       - Allow users to switch meme styles.  
+     - **Ticket 2: Set up meme selection logic**  
+       - Assign memes based on merge conflict type.  
+       - Let users override the selected memes.  
+
+---
+
+## Why is this NOT a user story?  
+
+This is not a real user story because:  
+    - It does not explain why the user wants to authenticate.  
+    - It describes a function rather than a user-driven need.  
+
