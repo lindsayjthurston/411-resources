@@ -1,0 +1,28 @@
+# SnickerSync Traditional Requirements
+
+Goal:
+Make SnickerSync a user-friendly and fun diffing experience.
+
+Non-Goal:
+SnickerSync will **not** support GitHub or other version control systems outside of GiggleGit.
+
+Non-Functional Requirements:
+
+1. **Security:**  
+   - Only PMs can modify "snickering" settings.  
+   - Users can only access their assigned test version.
+
+2. **Randomized User Testing:**  
+   - Assign users randomly into test groups.  
+   - Track user actions for later analysis.
+
+Functional Requirements:
+
+- **Security:**
+  1. PMs can create, edit, and delete snickering concepts.
+  2. Users can only view their assigned version of the tool.
+
+- **Randomized User Testing:**
+  3. Users are randomly assigned to groups.
+  4. A dashboard records user activity during testing.
+
