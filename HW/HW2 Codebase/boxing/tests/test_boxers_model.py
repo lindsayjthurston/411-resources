@@ -1,5 +1,61 @@
+import os
 import pytest
+import sqlite3
+from boxing.models.boxers_model import create_boxer
 from boxing.models.boxers_model import get_weight_class
+
+from boxing.utils.sql_utils import get_db_connection
+
+DB_PATH = os.getenv("DB_PATH", "/app/sql/boxing.db")
+
+@pytest.fixture(scope="module")
+def setup_db():
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("CREATE TABLE IF NOT EXISTS boxers (id INTEGER PRIMARY KEY, name TEXT, weight INTEGER, height INTEGER, reach REAL, age INTEGER)")
+        conn.commit()
+        
+        yield conn 
+        
+    finally:
+        if conn:
+            cursor.execute("DROP TABLE IF EXISTS boxers")  
+            conn.commit()
+            conn.close()
+
+
+def test_create_boxer_valid(setup_db):
+    create_boxer("Mike Tyson", 220, 72, 80.0, 30)
+    cursor = setup_db.cursor()
+    cursor.execute("SELECT name, weight FROM boxers WHERE name = 'Mike Tyson'")
+    boxer = cursor.fetchone()
+    assert boxer is not None
+    assert boxer[0] == "Mike Tyson"
+    assert boxer[1] == 220
+
+def test_create_boxer_invalid_weight(setup_db):
+    with pytest.raises(ValueError, match="Invalid weight: 100. Must be at least 125."):
+        create_boxer("Invalid Boxer", 100, 72, 80.0, 30)
+
+def test_create_boxer_invalid_height(setup_db):
+    with pytest.raises(ValueError, match="Invalid height: -5. Must be greater than 0."):
+        create_boxer("Invalid Boxer", 150, -5, 80.0, 30)
+
+def test_create_boxer_invalid_reach(setup_db):
+    with pytest.raises(ValueError, match="Invalid reach: -1. Must be greater than 0."):
+        create_boxer("Invalid Boxer", 150, 72, -1, 30)
+
+def test_create_boxer_invalid_age(setup_db):
+    with pytest.raises(ValueError, match="Invalid age: 50. Must be between 18 and 40."):
+        create_boxer("Old Boxer", 150, 72, 80.0, 50)
+
+def test_create_boxer_duplicate_name(setup_db):
+    create_boxer("Muhammad Ali", 220, 72, 80.0, 30)
+    with pytest.raises(ValueError, match="Boxer with name 'Muhammad Ali' already exists"):
+        create_boxer("Muhammad Ali", 230, 73, 85.0, 32)
 
 def test_get_weight_class_heavyweight():
     assert get_weight_class(210) == "HEAVYWEIGHT"

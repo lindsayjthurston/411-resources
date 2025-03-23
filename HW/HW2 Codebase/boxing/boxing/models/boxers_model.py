@@ -119,11 +119,11 @@ def get_leaderboard(sort_by: str = "wins") -> List[dict[str, Any]]:
 
     Args:
         sort_by (str, optional): The field to sort by. Must be "wins" or "win_pct".
-                                 Defaults to "wins".
+        Defaults to "wins".
 
     Returns:
         List[dict[str, Any]]: A list of boxers with their stats, weight class,
-                              and win percentage (as a percentage).
+        and win percentage (as a percentage).
 
     Raises:
         ValueError: If an invalid sort_by value is provided.
@@ -273,7 +273,7 @@ def get_weight_class(weight: int) -> str:
     Raises:
         ValueError: If the weight is below the minimum valid weight (125 lbs).
     """
-    logger.info(f"Determining weight class for weight: {weight}")
+    logger.debug(f"Determining weight class for weight: {weight}")
 
     if weight >= 203:
         weight_class = 'HEAVYWEIGHT'
