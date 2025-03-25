@@ -12,19 +12,25 @@ DB_PATH = os.getenv("DB_PATH", "/app/sql/boxing.db")
 def setup_db():
     conn = None
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("CREATE TABLE IF NOT EXISTS boxers (id INTEGER PRIMARY KEY, name TEXT, weight INTEGER, height INTEGER, reach REAL, age INTEGER)")
-        conn.commit()
-        
-        yield conn 
-        
-    finally:
-        if conn:
-            cursor.execute("DROP TABLE IF EXISTS boxers")  
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS boxers (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    weight INTEGER NOT NULL CHECK (weight > 0),
+                    height INTEGER NOT NULL CHECK (height > 0),
+                    reach REAL CHECK (reach > 0),
+                    age INTEGER NOT NULL CHECK (age >= 18 AND age <= 40)
+                )
+            """)
             conn.commit()
-            conn.close()
+            yield conn  # Yield connection so tests can use it
+    finally:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DROP TABLE IF EXISTS boxers")
+            conn.commit()
 
 
 def test_create_boxer_valid(setup_db):
