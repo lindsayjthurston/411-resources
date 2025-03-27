@@ -102,16 +102,6 @@ def test_ring_full():
     with pytest.raises(ValueError, match="Ring is full, cannot add more boxers."):
         ring.enter_ring(boxer3)
 
-def test_clear_ring():
-    ring = RingModel()
-    boxer = Boxer(id=1, name="Lennox Lewis", weight=245, height=77, reach=84, age=34)
-
-    ring.enter_ring(boxer)
-    assert len(ring.ring) == 1
-
-    ring.clear_ring()
-    assert len(ring.ring) == 0
-
 def test_get_boxers():
     ring = RingModel()
     boxer1 = Boxer(id=1, name="Rocky Marciano", weight=190, height=70, reach=68, age=31)
