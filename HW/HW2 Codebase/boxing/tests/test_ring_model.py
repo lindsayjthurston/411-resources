@@ -152,3 +152,98 @@ def test_get_fighting_skill():
     actual_skill = ring.get_fighting_skill(boxer)
     
     assert actual_skill == expected_skill
+
+def test_get_fighting_skill_extreme_values():
+    ring = RingModel()
+    
+    # Boxer with extremely high weight
+    heavy_boxer = Boxer(id=1, name="Big Heavy", weight=1000, height=70, reach=75, age=30)
+    expected_skill_heavy = (1000 * len("Big Heavy")) + (75 / 10)  # High weight influences skill
+    actual_skill_heavy = ring.get_fighting_skill(heavy_boxer)
+    assert actual_skill_heavy == expected_skill_heavy
+
+    # Boxer with extremely low weight
+    light_boxer = Boxer(id=2, name="Light Feather", weight=50, height=70, reach=70, age=30)
+    expected_skill_light = (50 * len("Light Feather")) + (70 / 10)
+    actual_skill_light = ring.get_fighting_skill(light_boxer)
+    assert actual_skill_light == expected_skill_light
+
+    # Boxer exactly at age 25 (age modifier should be 0)
+    mid_age_boxer = Boxer(id=3, name="Mid Age Boxer", weight=160, height=70, reach=74, age=25)
+    expected_skill_mid_age = (160 * len("Mid Age Boxer")) + (74 / 10)
+    actual_skill_mid_age = ring.get_fighting_skill(mid_age_boxer)
+    assert actual_skill_mid_age == expected_skill_mid_age
+
+    # Boxer exactly at age 35 (age modifier should be 0)
+    mid_age_boxer = Boxer(id=4, name="Old Boxer", weight=160, height=70, reach=74, age=35)
+    expected_skill_mid_age = (160 * len("Old Boxer")) + (74 / 10)
+    actual_skill_mid_age = ring.get_fighting_skill(mid_age_boxer)
+    assert actual_skill_mid_age == expected_skill_mid_age
+
+def test_enter_ring_invalid_type():
+    ring = RingModel()
+    with pytest.raises(TypeError):
+        ring.enter_ring("Invalid Boxer Type")  # Passing a string instead of a Boxer object
+
+    with pytest.raises(TypeError):
+        ring.enter_ring(12345)  # Passing an integer instead of a Boxer object
+
+def test_clear_ring_empty():
+    ring = RingModel()
+    ring.clear_ring()  # Call clear on an empty ring
+    assert len(ring.ring) == 0  # It should remain empty
+
+def test_clear_ring_multiple_calls():
+    ring = RingModel()
+    boxer = Boxer(id=1, name="Test Boxer", weight=180, height=70, reach=75, age=28)
+    
+    ring.enter_ring(boxer)
+    assert len(ring.ring) == 1
+    
+    ring.clear_ring()  # First clear
+    assert len(ring.ring) == 0
+    
+    ring.clear_ring()  # Second clear, should have no effect
+    assert len(ring.ring) == 0
+
+def test_weight_classes():
+    ring = RingModel()
+
+    # Heavyweight boxer
+    heavyweight = Boxer(id=1, name="Heavy Hulk", weight=250, height=76, reach=80, age=30)
+    assert heavyweight.weight_class == "HEAVYWEIGHT"
+
+    # Middleweight boxer
+    middleweight = Boxer(id=2, name="Middle Mike", weight=175, height=74, reach=75, age=27)
+    assert middleweight.weight_class == "MIDDLEWEIGHT"
+
+    # Lightweight boxer
+    lightweight = Boxer(id=3, name="Light Leo", weight=130, height=70, reach=74, age=25)
+    assert lightweight.weight_class == "LIGHTWEIGHT"
+
+    # Featherweight boxer
+    featherweight = Boxer(id=4, name="Feather Fred", weight=120, height=69, reach=72, age=23)
+    assert featherweight.weight_class == "FEATHERWEIGHT"
+
+def test_get_boxers_invalid_state():
+    ring = RingModel()
+    # Ensure get_boxers returns an empty list when no boxers have been added
+    boxers = ring.get_boxers()
+    assert boxers == []
+    
+    boxer = Boxer(id=1, name="Test Boxer", weight=180, height=70, reach=75, age=28)
+    ring.enter_ring(boxer)
+    boxers = ring.get_boxers()
+    assert boxers == [boxer]  # Should return the boxer in the ring
+
+def test_get_fighting_skill_mocked(mocker):
+    ring = RingModel()
+    boxer = Boxer(id=1, name="Mock Boxer", weight=160, height=70, reach=74, age=30)
+    
+    # Mock the actual calculation of the skill
+    mocker.patch.object(ring, 'get_fighting_skill', return_value=500)
+    
+    skill = ring.get_fighting_skill(boxer)
+    assert skill == 500  # The mocked value should be returned
+
+
