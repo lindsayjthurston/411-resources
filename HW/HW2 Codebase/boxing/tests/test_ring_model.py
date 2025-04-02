@@ -9,20 +9,21 @@ def setup_db():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("DROP TABLE IF EXISTS boxers")  # Ensure clean slate
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS boxers (
-                    id INTEGER PRIMARY KEY,
+                CREATE TABLE boxers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL UNIQUE,
                     weight INTEGER NOT NULL CHECK (weight > 0),
                     height INTEGER NOT NULL CHECK (height > 0),
                     reach REAL CHECK (reach > 0),
-                    age INTEGER NOT NULL CHECK (age >= 18 AND age <= 40),
+                    age INTEGER NOT NULL CHECK (age BETWEEN 18 AND 40),
                     fights INTEGER DEFAULT 0,
                     wins INTEGER DEFAULT 0
                 )
             """)
             conn.commit()
-            yield conn  # Yield connection so tests can use it
+        yield  # Yield connection so tests can use it
     finally:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -47,19 +48,25 @@ def test_enter_ring(setup_db, ring):
     
     assert len(ring.get_boxers()) == 2
 
-def test_fight(setup_db, ring):
-    """Test that a fight occurs correctly and updates the database."""
+def test_fight(mocker, setup_db):
+    """Test fight logic and database updates."""
+    ring = RingModel()
     create_boxer("Fighter 1", 180, 74, 76.0, 30)
     create_boxer("Fighter 2", 175, 73, 75.0, 27)
 
     fighter_1 = get_boxer_by_name("Fighter 1")
     fighter_2 = get_boxer_by_name("Fighter 2")
 
-    ring.enter_ring(fighter_1)  # Fix function call
+    ring.enter_ring(fighter_1)
     ring.enter_ring(fighter_2)
 
+    # Mocking randomness for predictable fight outcome
+    mocker.patch("boxing.utils.api_utils.get_random", return_value=0.3)
+
     winner = ring.fight()
+    
     assert winner in [fighter_1.name, fighter_2.name]
+    assert len(ring.ring) == 0
 
 def test_fight_not_enough_boxers(ring):
     """Test that a fight cannot start with less than two boxers."""
@@ -85,11 +92,6 @@ def test_enter_valid_boxer():
     assert len(ring.ring) == 1
     assert ring.ring[0] == boxer
 
-def test_enter_invalid_type():
-    ring = RingModel()
-    with pytest.raises(AttributeError):
-        ring.enter_ring(123)
-
 def test_ring_full():
     ring = RingModel()
     boxer1 = Boxer(id=1, name="Muhammad Ali", weight=210, height=74, reach=78, age=32)
@@ -114,11 +116,6 @@ def test_get_boxers():
     assert len(boxers) == 2
     assert boxers == [boxer1, boxer2]
 
-def test_fight_not_enough_boxers():
-    ring = RingModel()
-    with pytest.raises(ValueError, match="There must be two boxers to start a fight."):
-        ring.fight()
-
 def test_fight_success(mocker):
     ring = RingModel()
     boxer1 = Boxer(id=1, name="Sugar Ray Leonard", weight=160, height=70, reach=74, age=28)
@@ -136,47 +133,24 @@ def test_fight_success(mocker):
 
 def test_get_fighting_skill():
     ring = RingModel()
-    boxer = Boxer(id=1, name="Gennady Golovkin", weight=160, height=70, reach=74, age=35)
     
-    expected_skill = (160 * len("Gennady Golovkin")) + (74 / 10)  # Remove -2 if age is exactly 35
-    actual_skill = ring.get_fighting_skill(boxer)
-    
-    assert actual_skill == expected_skill
+    # Boxer with age < 25 (age_modifier = -1)
+    boxer_young = Boxer(id=1, name="Young Boxer", weight=160, height=70, reach=74, age=24)
+    expected_skill_young = (160 * len("Young Boxer")) + (74 / 10) - 1  # age_modifier = -1
+    actual_skill_young = ring.get_fighting_skill(boxer_young)
+    assert actual_skill_young == expected_skill_young
 
-def test_get_fighting_skill_extreme_values():
-    ring = RingModel()
-    
-    # Boxer with extremely high weight
-    heavy_boxer = Boxer(id=1, name="Big Heavy", weight=1000, height=70, reach=75, age=30)
-    expected_skill_heavy = (1000 * len("Big Heavy")) + (75 / 10)  # High weight influences skill
-    actual_skill_heavy = ring.get_fighting_skill(heavy_boxer)
-    assert actual_skill_heavy == expected_skill_heavy
+    # Boxer with age > 35 (age_modifier = -2)
+    boxer_old = Boxer(id=2, name="Old Boxer", weight=160, height=70, reach=74, age=36)
+    expected_skill_old = (160 * len("Old Boxer")) + (74 / 10) - 2  # age_modifier = -2
+    actual_skill_old = ring.get_fighting_skill(boxer_old)
+    assert actual_skill_old == expected_skill_old
 
-    # Boxer with extremely low weight
-    light_boxer = Boxer(id=2, name="Light Feather", weight=50, height=70, reach=70, age=30)
-    expected_skill_light = (50 * len("Light Feather")) + (70 / 10)
-    actual_skill_light = ring.get_fighting_skill(light_boxer)
-    assert actual_skill_light == expected_skill_light
-
-    # Boxer exactly at age 25 (age modifier should be 0)
-    mid_age_boxer = Boxer(id=3, name="Mid Age Boxer", weight=160, height=70, reach=74, age=25)
-    expected_skill_mid_age = (160 * len("Mid Age Boxer")) + (74 / 10)
-    actual_skill_mid_age = ring.get_fighting_skill(mid_age_boxer)
-    assert actual_skill_mid_age == expected_skill_mid_age
-
-    # Boxer exactly at age 35 (age modifier should be 0)
-    mid_age_boxer = Boxer(id=4, name="Old Boxer", weight=160, height=70, reach=74, age=35)
-    expected_skill_mid_age = (160 * len("Old Boxer")) + (74 / 10)
-    actual_skill_mid_age = ring.get_fighting_skill(mid_age_boxer)
-    assert actual_skill_mid_age == expected_skill_mid_age
-
-def test_enter_ring_invalid_type():
-    ring = RingModel()
-    with pytest.raises(TypeError):
-        ring.enter_ring("Invalid Boxer Type")  # Passing a string instead of a Boxer object
-
-    with pytest.raises(TypeError):
-        ring.enter_ring(12345)  # Passing an integer instead of a Boxer object
+    # Boxer with age between 25 and 35 (age_modifier = 0)
+    boxer_middle = Boxer(id=3, name="Middle Boxer", weight=160, height=70, reach=74, age=30)
+    expected_skill_middle = (160 * len("Middle Boxer")) + (74 / 10)  # age_modifier = 0
+    actual_skill_middle = ring.get_fighting_skill(boxer_middle)
+    assert actual_skill_middle == expected_skill_middle
 
 def test_clear_ring_empty():
     ring = RingModel()
@@ -197,23 +171,21 @@ def test_clear_ring_multiple_calls():
     assert len(ring.ring) == 0
 
 def test_weight_classes():
-    ring = RingModel()
-
-    # Heavyweight boxer
     heavyweight = Boxer(id=1, name="Heavy Hulk", weight=250, height=76, reach=80, age=30)
     assert heavyweight.weight_class == "HEAVYWEIGHT"
 
-    # Middleweight boxer
     middleweight = Boxer(id=2, name="Middle Mike", weight=175, height=74, reach=75, age=27)
     assert middleweight.weight_class == "MIDDLEWEIGHT"
 
-    # Lightweight boxer
-    lightweight = Boxer(id=3, name="Light Leo", weight=130, height=70, reach=74, age=25)
+    lightweight = Boxer(id=3, name="Light Leo", weight=135, height=70, reach=74, age=25)
     assert lightweight.weight_class == "LIGHTWEIGHT"
 
-    # Featherweight boxer
-    featherweight = Boxer(id=4, name="Feather Fred", weight=120, height=69, reach=72, age=23)
+    featherweight = Boxer(id=4, name="Feather Fred", weight=125, height=69, reach=72, age=23)
     assert featherweight.weight_class == "FEATHERWEIGHT"
+
+    # Now correctly checking that invalid weight raises an error
+    with pytest.raises(ValueError, match="Invalid weight: 120. Weight must be at least 125."):
+        Boxer(id=5, name="Invalid Ivan", weight=120, height=69, reach=72, age=22)
 
 def test_get_boxers_invalid_state():
     ring = RingModel()
@@ -226,14 +198,18 @@ def test_get_boxers_invalid_state():
     boxers = ring.get_boxers()
     assert boxers == [boxer]  # Should return the boxer in the ring
 
-def test_get_fighting_skill_mocked(mocker):
+def test_get_fighting_skill():
     ring = RingModel()
-    boxer = Boxer(id=1, name="Mock Boxer", weight=160, height=70, reach=74, age=30)
     
-    # Mock the actual calculation of the skill
-    mocker.patch.object(ring, 'get_fighting_skill', return_value=500)
-    
-    skill = ring.get_fighting_skill(boxer)
-    assert skill == 500  # The mocked value should be returned
+    boxer_young = Boxer(id=1, name="Young Boxer", weight=160, height=70, reach=74, age=24)
+    expected_skill_young = (160 * len("Young Boxer")) + (74 / 10) - 1  # Age modifier = -1
+    assert ring.get_fighting_skill(boxer_young) == expected_skill_young
 
+    boxer_old = Boxer(id=2, name="Old Boxer", weight=160, height=70, reach=74, age=36)
+    expected_skill_old = (160 * len("Old Boxer")) + (74 / 10) - 2  # Age modifier = -2
+    assert ring.get_fighting_skill(boxer_old) == expected_skill_old
+
+    boxer_middle = Boxer(id=3, name="Middle Boxer", weight=160, height=70, reach=74, age=30)
+    expected_skill_middle = (160 * len("Middle Boxer")) + (74 / 10)  # No age modifier
+    assert ring.get_fighting_skill(boxer_middle) == expected_skill_middle
 

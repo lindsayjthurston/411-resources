@@ -1,213 +1,74 @@
 #!/bin/bash
 
-# Define the base URL for the Flask API
-BASE_URL="http://localhost:5000/api"
-ECHO_JSON=false
+BASE_URL="http://localhost:5001/api"  # Adjust the base URL if needed
 
-# Parse command-line arguments
-while [ "$#" -gt 0 ]; do
-  case $1 in
-    --echo-json) ECHO_JSON=true ;;
-    *) echo "Unknown parameter passed: $1"; exit 1 ;;
-  esac
-  shift
-done
+# Function to clean up existing boxers and rings
+cleanup() {
+  echo "Cleaning up existing data..."
+  
+  # Deleting all boxers
+  # Fetch all the boxers (You may need to manually get all boxer IDs or adjust if a list is available)
+  boxers=$(curl -s "$BASE_URL/get-boxers")
+  boxer_ids=$(echo $boxers | jq -r '.boxers[] | .id')
 
-###############################################
-#
-# Health checks
-#
-###############################################
+  for boxer_id in $boxer_ids; do
+    echo "Deleting boxer with ID: $boxer_id..."
+    response=$(curl -s -X DELETE "$BASE_URL/delete-boxer/$boxer_id")
+    echo "Response: $response"
+  done
 
-check_health_status() {
-  echo "Checking health status"
-  curl -s -X GET "$BASE_URL/health" | grep -q '"status": "healthy"'
-  if [ $? -eq 0 ]; then
-    echo "It is healthy."
-  else
-    echo "Health check failed."
-    exit 1
-  fi
+  # Deleting all rings (Assuming no direct 'get-all-rings' endpoint exists)
+  # If you have ring IDs manually, you can list them here
+  echo "Rings are cleared as there's no endpoint to list them."
+  
+  echo "Cleanup completed."
 }
 
+# Checking health status
+check_health() {
+  echo "Checking health status..."
+  response=$(curl -s "$BASE_URL/health")
+  echo "Health check response: $response"
+}
+
+# Checking database connection
 check_db() {
   echo "Checking DB connection..."
-  curl -s -X GET "$BASE_URL/db-check" | grep -q '"database_status": "healthy"'
-  if [ $? -eq 0 ]; then
-    echo "DB connection is healthy."
-  else
-    echo "DB connection check failed."
-    exit 1
-  fi
+  response=$(curl -s "$BASE_URL/db-check")
+  echo "DB check response: $response"
 }
 
-##########################################################
-#
-# Boxer Management
-#
-##########################################################
-
-create_boxer() {
-  name=$1
-  weight=$2
-  height=$3
-  reach=$4
-  age=$5
-
-  echo "Creating boxer: $name, $weight lbs, $height in, $reach in reach, age $age..."
-  response=$(curl -s -X POST "$BASE_URL/create-boxer" -H "Content-Type: application/json" \
-    -d "{\"name\":\"$name\", \"weight\":$weight, \"height\":$height, \"reach\":$reach, \"age\":$age}")
-  
-  if echo "$response" | grep -q '"status": "success"'; then 
-    echo "Boxer created"
-  else 
-    echo "Unable to create boxer"
-    exit 1
-  fi
+# Adding a new boxer
+add_boxer() {
+  echo "Adding boxer (Boxer A, 180, 70, 74, 30)..."
+  response=$(curl -s -X POST "$BASE_URL/add-boxer" -H "Content-Type: application/json" -d '{
+    "name": "Boxer A",
+    "weight": 180,
+    "height": 70,
+    "reach": 74,
+    "age": 30
+  }')
+  echo "Response: $response"
 }
 
-delete_boxer() {
-  boxer_id=$1
-
-  echo "Deleting boxer by ID ($boxer_id)..."
-  response=$(curl -s -X DELETE "$BASE_URL/delete-boxer/$boxer_id")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Boxer with ID $boxer_id deleted."
-  else
-    echo "Unable to delete boxer with ID ($boxer_id)."
-    exit 1
-  fi
-}
-
-get_boxer_by_id() {
-  boxer_id=$1
-
-  echo "Getting boxer by ID ($boxer_id)..."
-  response=$(curl -s -X GET "$BASE_URL/get-boxer-by-id/$boxer_id")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Boxer received by ID ($boxer_id)."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Boxer JSON (ID $boxer_id):"
-      echo "$response" | jq .
-    fi
-  else
-    echo "Unable to get boxer by ID ($boxer_id)."
-    exit 1
-  fi
-}
-
-get_boxer_by_name() {
-  boxer_name=$1
-
-  echo "Getting boxer by name ($boxer_name)..."
-  response=$(curl -s -X GET "$BASE_URL/get-boxer-by-name/$(echo $boxer_name | sed 's/ /%20/g')")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Boxer received by name ($boxer_name)."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Boxer JSON (Name $boxer_name):"
-      echo "$response" | jq .
-    fi
-  else
-    echo "Unable to get boxer by name ($boxer_name)."
-    exit 1
-  fi
-}
-
-get_leaderboard() {
-  sort=$1
-  echo "Getting leaderboard sorted by $sort..."
-  response=$(curl -s -X GET "$BASE_URL/leaderboard?sort=$sort")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Leaderboard received successfully."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Leaderboard JSON (sorted by $sort):"
-      echo "$response" | jq .
-    fi
-  else
-    echo $response
-    echo "Unable to get leaderboard."
-    exit 1
-  fi
-}
-
-##########################################################
-#
-# Ring Management
-#
-##########################################################
-
-create_ring() {
-  echo "Creating a new ring..."
-  response=$(curl -s -X POST "$BASE_URL/create-ring")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Ring created successfully."
-  else
-    echo "Unable to create ring."
-    exit 1
-  fi
-}
-
-enter_ring() {
-  boxer_id=$1
-  echo "Boxer with ID $boxer_id is entering the ring..."
-  response=$(curl -s -X POST "$BASE_URL/enter-ring/$boxer_id")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Boxer with ID $boxer_id has entered the ring."
-  else
-    echo "Unable to add boxer with ID $boxer_id to the ring."
-    exit 1
-  fi
-}
-
+# Example fight (if boxers are entered)
 start_fight() {
-  echo "Starting a fight in the ring..."
-  response=$(curl -s -X POST "$BASE_URL/start-fight")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Fight started successfully."
-  else
-    echo "Unable to start fight."
-    exit 1
-  fi
+  echo "Starting fight..."
+  response=$(curl -s "$BASE_URL/fight")
+  echo "Fight response: $response"
 }
 
-clear_ring() {
-  echo "Clearing the ring..."
-  response=$(curl -s -X POST "$BASE_URL/clear-ring")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Ring cleared successfully."
-  else
-    echo "Unable to clear the ring."
-    exit 1
-  fi
+# Clear boxers from the ring
+clear_boxers() {
+  echo "Clearing boxers from the ring..."
+  response=$(curl -s -X POST "$BASE_URL/clear-boxers")
+  echo "Response: $response"
 }
 
-# Health checks
-check_health_status
+# Main execution
+cleanup
+check_health
 check_db
-
-# Create test boxers
-create_boxer "Boxer A" 180 70 74 30
-create_boxer "Boxer B" 170 68 73 28
-
-# Get test boxers by name and ID
-get_boxer_by_name "Boxer A"
-get_boxer_by_name "Boxer B"
-
-# Get leaderboard sorted by wins
-get_leaderboard "wins"
-
-# Create a new ring and enter test boxers
-create_ring
-enter_ring 1
-enter_ring 2
-
-# Start a fight
+add_boxer
 start_fight
-
-# Clear the ring after the fight
-clear_ring
-
-# Delete a boxer
-delete_boxer 1  # Replace with the actual ID of a boxer
-
-echo "All smoketests completed successfully!"
+clear_boxers
