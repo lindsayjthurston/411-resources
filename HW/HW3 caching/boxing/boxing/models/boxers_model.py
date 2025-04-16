@@ -123,12 +123,40 @@ class Boxers(db.Model):
         logger.info(f"Creating boxer: {name}, {weight=} {height=} {reach=} {age=}")
 
         try:
+            boxer = Boxers(
+                name=name.strip(),
+                weight=weight,
+                height=height,
+                reach=reach,
+                age=age
+            )
+            boxer.validate()
+        except ValueError as e:
+            logger.warning(f"Validation failed: {e}")
+            raise
+
+        try:
+            existing = Boxers.query.filter_by(name=name.strip()).first()
+
+            if existing:
+                logger.error(f"Boxer already exists: {name})")
+                raise ValueError(f"Boxer with name '{name}' already exists.")
+            
+            db.session.add(boxer)
+            db.session.commit()
+            logger.info(f"Boxer successfully added: {name})")
+
             logger.info(f"Boxer created successfully: {name}")
+
         except IntegrityError:
             logger.error(f"Boxer with name '{name}' already exists.")
+            db.session.rollback()
+            raise ValueError(f"Boxer with name '{name}' already exists.")
+
         except SQLAlchemyError as e:
             db.session.rollback()
             logger.error(f"Database error during creation: {e}")
+            raise
 
     @classmethod
     def get_boxer_by_id(cls, boxer_id: int) -> "Boxers":
