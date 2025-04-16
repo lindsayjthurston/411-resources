@@ -258,20 +258,29 @@ class Boxers(db.Model):
         Raises:
             ValueError: If the result is not 'win' or 'loss'.
             ValueError: If the number of wins exceeds the number of fights.
-
+            SQLAlchemyError: If any database error occurs.
         """
-        if result not in {"win", "loss"}:
-            raise ValueError("Result must be 'win' or 'loss'.")
+        logger.info(f"Attempting to update stats for boxer with name {self.name}")
 
-        self.fights += 1
-        if result == "win":
-            self.wins += 1
+        try:
+            if result not in {"win", "loss"}:
+                raise ValueError("Result must be 'win' or 'loss'.")
 
-        if self.wins > self.fights:
-            raise ValueError("Wins cannot exceed number of fights.")
+            self.fights += 1
+            if result == "win":
+                self.wins += 1
 
-        db.session.commit()
-        logger.info(f"Updated stats for boxer {self.name}: {self.fights} fights, {self.wins} wins.")
+            if self.wins > self.fights:
+                raise ValueError("Wins cannot exceed number of fights.")
+
+            db.session.commit()
+            logger.info(f"Updated stats for boxer {self.name}: {self.fights} fights, {self.wins} wins.")
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error while updating stats for boxer {self.name}: {e}")
+            db.session.rollback()
+            raise
+            
 
     @staticmethod
     def get_leaderboard(sort_by: str = "wins") -> List[dict]:
