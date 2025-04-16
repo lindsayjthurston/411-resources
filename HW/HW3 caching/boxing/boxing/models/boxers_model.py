@@ -33,6 +33,31 @@ class Boxers(db.Model):
     wins = db.Column(db.Integer, nullable=False, default=0)
     weight_class = db.Column(db.String)
 
+    def validate(self) -> None:
+        if not self.name or not isinstance(self.name, str):
+            raise ValueError("Name must be a non-empty string.")
+        
+        if not self.weight or self.weight < 125 or not isinstance(self.weight, int):
+            raise ValueError("Weight must be greater than or equal to 125.")
+        
+        if not self.height or self.height <= 0 or not isinstance(self.height, int):
+            raise ValueError("Height must be a positive integer.")
+        
+        if not self.reach or self.reach <= 0 or not isinstance(self.reach, int):
+            raise ValueError("Reach must be a positive integer.")
+        
+        if not self.age or self.age <= 0 or not isinstance(self.age, int):
+            raise ValueError("Age must be a positive integer.")
+        
+        if not self.fights or self.fights < 0 or not isinstance(self.fights, int):
+            raise ValueError("Fights can't be below 0.")
+        
+        if not self.wins or self.wins > self.fights or not isinstance(self.wins, int):
+            raise ValueError("Wins must be between 0 and the number of fights.")
+        
+        if not self.weight_class or not isinstance(self.weight_class, str):
+            raise ValueError("weight_class must be a non-empty string.")
+
     def __init__(self, name: str, weight: float, height: float, reach: float, age: int):
         """Initialize a new Boxer instance with basic attributes.
 
