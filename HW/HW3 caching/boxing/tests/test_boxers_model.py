@@ -45,13 +45,13 @@ def test_clear_ring(): return True
 #     assert "Attempted to clear an empty ring." in caplog.text
 def test_clear_ring_empty(): return True
 
-# def test_get_boxers_empty(ring_model, caplog):
-#     """Test get_boxers logs when empty."""
-#     with caplog.at_level("WARNING"):
-#         boxers = ring_model.get_boxers()
-#     assert boxers == []
-#     assert "Retrieving boxers from an empty ring." in caplog.text
-def test_get_boxers_empty(): return True
+def test_get_boxers_empty(ring_model, caplog):
+    """Test get_boxers logs when empty."""
+    with caplog.at_level("WARNING"):
+        boxers = ring_model.get_boxers()
+    assert boxers == []
+    assert "Retrieving boxers from an empty ring." in caplog.text
+# def test_get_boxers_empty(): return True
 
 # def test_get_boxers_with_data(app, ring_model, sample_boxers):
 #     """Test get_boxers with two sample boxers."""
