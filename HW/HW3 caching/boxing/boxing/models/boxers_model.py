@@ -101,7 +101,17 @@ class Boxers(db.Model):
             ValueError: If the weight is less than 125.
 
         """
-        pass
+        if weight >= 203:
+            weight_class = 'HEAVYWEIGHT'
+        elif weight >= 166:
+            weight_class = 'MIDDLEWEIGHT'
+        elif weight >= 133:
+            weight_class = 'LIGHTWEIGHT'
+        elif weight >= 125:
+            weight_class = 'FEATHERWEIGHT'
+        else:
+            raise ValueError(f"Invalid weight: {weight}. Weight must be at least 125.")
+        return weight_class
 
     @classmethod
     def create_boxer(cls, name: str, weight: float, height: float, reach: float, age: int) -> None:
@@ -298,28 +308,33 @@ class Boxers(db.Model):
         """
         logger.info(f"Retrieving leaderboard. Sort by: {sort_by}")
 
-        if sort_by not in {"wins", "win_pct"}:
-            logger.error(f"Invalid sort_by parameter: {sort_by}")
-            raise ValueError(f"Invalid sort_by parameter: {sort_by}")
+        try:
+            if sort_by not in {"wins", "win_pct"}:
+                logger.error(f"Invalid sort_by parameter: {sort_by}")
+                raise ValueError(f"Invalid sort_by parameter: {sort_by}")
 
-        boxers = Boxers.query.filter(Boxers.fights > 0).all()
+            boxers = Boxers.query.filter(Boxers.fights > 0).all()
 
-        def compute_win_pct(b: Boxers) -> float:
-            return round((b.wins / b.fights) * 100, 1) if b.fights > 0 else 0.0
+            def compute_win_pct(b: Boxers) -> float:
+                return round((b.wins / b.fights) * 100, 1) if b.fights > 0 else 0.0
 
-        leaderboard = [{
-            "id": b.id,
-            "name": b.name,
-            "weight": b.weight,
-            "height": b.height,
-            "reach": b.reach,
-            "age": b.age,
-            "weight_class": b.weight_class,
-            "fights": b.fights,
-            "wins": b.wins,
-            "win_pct": compute_win_pct(b)
-        } for b in boxers]
+            leaderboard = [{
+                "id": b.id,
+                "name": b.name,
+                "weight": b.weight,
+                "height": b.height,
+                "reach": b.reach,
+                "age": b.age,
+                "weight_class": b.weight_class,
+                "fights": b.fights,
+                "wins": b.wins,
+                "win_pct": compute_win_pct(b)
+            } for b in boxers]
 
-        leaderboard.sort(key=lambda b: b[sort_by], reverse=True)
-        logger.info("Leaderboard retrieved successfully.")
-        return leaderboard
+            leaderboard.sort(key=lambda b: b[sort_by], reverse=True)
+            logger.info("Leaderboard retrieved successfully.")
+            return leaderboard
+        
+        except SQLAlchemyError as e:
+            logger.error(f"Database error while retrieving all songs: {e}")
+            raise
