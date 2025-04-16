@@ -36,7 +36,13 @@ class Boxers(db.Model):
             - Fight statistics (`fights` and `wins`) are initialized to 0 by default in the database schema.
 
         """
-        pass
+        self.name = name
+        self.weight = weight
+        self.height = height
+        self.reach = reach
+        self.age = age
+        self.weight_class = get_weight_class(weight)
+
 
     @classmethod
     def get_weight_class(cls, weight: float) -> str:
@@ -134,13 +140,22 @@ class Boxers(db.Model):
             ValueError: If the boxer with the given ID does not exist.
 
         """
-        boxer = cls.get_boxer_by_id(boxer_id)
-        if boxer is None:
-            logger.info(f"Boxer with ID {boxer_id} not found.")
-            raise ValueError(f"Boxer with ID {boxer_id} not found.")
-        db.session.delete(boxer)
-        db.session.commit()
-        logger.info(f"Boxer with ID {boxer_id} permanently deleted.")
+        logger.info(f"Received request to delete song with ID {boxer_id}")
+
+        try:
+            boxer = cls.query.get(boxer_id)
+            if not boxer:
+                logger.warning(f"Attempted to delete non-existent boxer with ID {boxer_id}")
+                raise ValueError(f"Boxer with ID {boxer_id} not found")
+
+            db.session.delete(boxer)
+            db.session.commit()
+            logger.info(f"Successfully deleted boxer with ID {boxer_id}")
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error while deleting boxer with ID {boxer_id}: {e}")
+            db.session.rollback()
+            raise
 
     def update_stats(self, result: str) -> None:
         """Update the boxer's fight and win count based on result.
