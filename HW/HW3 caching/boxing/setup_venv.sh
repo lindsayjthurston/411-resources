@@ -2,7 +2,7 @@
 
 # Set the name of the virtual environment directory
 VENV_DIR=venv
-REQUIREMENTS_FILE=boxing/requirements.txt
+REQUIREMENTS_FILE=requirements.txt
 
 # Check if the virtual environment already exists
 if [ ! -d "$VENV_DIR" ]; then
@@ -23,8 +23,8 @@ if [ ! -d "$VENV_DIR" ]; then
     echo "Error: $REQUIREMENTS_FILE not found."
     exit 1
   fi
+  
 else
-
   echo "Virtual environment already exists. Activated."
 
   source ${VENV_DIR}/bin/activate
