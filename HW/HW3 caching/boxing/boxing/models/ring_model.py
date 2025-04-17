@@ -31,7 +31,8 @@ class RingModel:
             ttl_seconds (int): The time-to-live in seconds for the cached boxer objects.
 
         """
-        pass
+        self.ring = []
+
 
     def fight(self) -> str:
         """Simulates a fight between two combatants.
@@ -131,18 +132,31 @@ class RingModel:
             List[Boxers]: A list of Boxers dataclass instances representing the boxers in the ring.
 
         """
+        if not hasattr(self, "ring"):
+            self.ring = []
+
         if not self.ring:
             logger.warning("Retrieving boxers from an empty ring.")
         else:
             logger.info(f"Retrieving {len(self.ring)} boxers from the ring.")
 
+        boxers = []  # define it so the logging line below works
+
         for boxer_id in self.ring:
+            # placeholder TTL logic (you can implement this later)
+            expired = True  # assume TTL is always expired for now
+
             if expired:
                 logger.info(f"TTL expired or missing for boxer {boxer_id}. Refreshing from DB.")
             else:
                 logger.debug(f"Using cached boxer {boxer_id} (TTL valid).")
 
+            # TODO: Retrieve the actual boxer object from DB and add to list
+            # boxer = Boxers.get_boxer_by_id(boxer_id)
+            # boxers.append(boxer)
+
         logger.info(f"Retrieved {len(boxers)} boxers from the ring.")
+        return boxers
 
     def get_fighting_skill(self, boxer: Boxers) -> float:
         """Calculates the fighting skill for a boxer based on arbitrary rules.
