@@ -32,6 +32,8 @@ class RingModel:
 
         """
         self.ring = []
+        self._boxer_cache = {}
+        self._ttl = {}
 
 
     def fight(self) -> str:
@@ -120,6 +122,8 @@ class RingModel:
             logger.error(str(e))
             raise
 
+        self.ring.append(boxer_id)
+        
         logger.info(f"Adding boxer '{boxer.name}' (ID {boxer_id}) to the ring")
 
         logger.info(f"Current boxers in the ring: {[Boxers.get_boxer_by_id(b).name for b in self.ring]}")
@@ -132,28 +136,29 @@ class RingModel:
             List[Boxers]: A list of Boxers dataclass instances representing the boxers in the ring.
 
         """
-        if not hasattr(self, "ring"):
-            self.ring = []
-
         if not self.ring:
             logger.warning("Retrieving boxers from an empty ring.")
         else:
             logger.info(f"Retrieving {len(self.ring)} boxers from the ring.")
 
-        boxers = []  # define it so the logging line below works
+        boxers = []
 
         for boxer_id in self.ring:
-            # placeholder TTL logic (you can implement this later)
-            expired = True  # assume TTL is always expired for now
+            expired = (
+                boxer_id not in self._ttl
+                or self._ttl[boxer_id] < time.time()
+            )
 
             if expired:
                 logger.info(f"TTL expired or missing for boxer {boxer_id}. Refreshing from DB.")
+                boxer = Boxers.get_boxer_by_id(boxer_id)
+                self._boxer_cache[boxer_id] = boxer
+                self._ttl[boxer_id] = time.time() + 60
             else:
                 logger.debug(f"Using cached boxer {boxer_id} (TTL valid).")
+                boxer = self._boxer_cache[boxer_id]
 
-            # TODO: Retrieve the actual boxer object from DB and add to list
-            # boxer = Boxers.get_boxer_by_id(boxer_id)
-            # boxers.append(boxer)
+            boxers.append(boxer)
 
         logger.info(f"Retrieved {len(boxers)} boxers from the ring.")
         return boxers

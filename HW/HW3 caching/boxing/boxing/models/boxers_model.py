@@ -185,14 +185,14 @@ class Boxers(db.Model):
         logger.info(f"Attempting to retrieve boxer with ID {boxer_id}")
 
         try:
-            song = cls.query.get(boxer_id)
+            boxer = cls.query.get(boxer_id)
 
-            if not song:
+            if not boxer:
                 logger.info(f"Boxer with ID {boxer_id} not found")
                 raise ValueError(f"Boxer with ID {boxer_id} not found")
 
             logger.info(f"Successfully retrieved boxer: {boxer.name})")
-            return song
+            return boxer
 
         except SQLAlchemyError as e:
             logger.error(f"Database error while retrieving boxer by ID {boxer_id}: {e}")
