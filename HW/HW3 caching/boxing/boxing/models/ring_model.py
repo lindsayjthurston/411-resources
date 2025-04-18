@@ -115,6 +115,7 @@ class RingModel:
         """
         if len(self.ring) >= 2:
             logger.error(f"Attempted to add boxer ID {boxer_id} but the ring is full")
+            raise ValueError("Ring is full")
 
         try:
             boxer = Boxers.get_boxer_by_id(boxer_id)
@@ -123,7 +124,7 @@ class RingModel:
             raise
 
         self.ring.append(boxer_id)
-        
+
         logger.info(f"Adding boxer '{boxer.name}' (ID {boxer_id}) to the ring")
 
         logger.info(f"Current boxers in the ring: {[Boxers.get_boxer_by_id(b).name for b in self.ring]}")
@@ -192,3 +193,5 @@ class RingModel:
 
         """
         logger.info("Clearing local boxer cache in RingModel.")
+        self._boxer_cache.clear()
+        self._ttl.clear()

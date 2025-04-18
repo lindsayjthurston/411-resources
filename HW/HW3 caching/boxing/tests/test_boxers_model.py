@@ -6,6 +6,8 @@ from boxing.models.ring_model import RingModel
 from boxing.models.boxers_model import Boxers
 from app import create_app
 from config import TestConfig
+from boxing.db import db
+
 
 
 @pytest.fixture
@@ -99,52 +101,65 @@ def test_enter_ring(ring_model, sample_boxers, app):
     assert ring_model.ring == [sample_boxers[0].id, sample_boxers[1].id]
 #def test_enter_ring(): return True
 
-def test_enter_ring_full(ring_model):
-    app = create_app(config_class=TestConfig)
-    with app.app_context():
-        ring_model.ring = [1, 2]
+def test_enter_ring_full(ring_model, app):
+   with app.app_context():
+        # Create two boxers
+        boxer1 = Boxers(name="Boxer One", weight=130, height=180, reach=70, age=25)
+        boxer2 = Boxers(name="Boxer Two", weight=140, height=185, reach=72, age=28)
+        db.session.add_all([boxer1, boxer2])
+        db.session.commit()
+
+        # Fill the ring with their IDs
+        ring_model.ring = [boxer1.id, boxer2.id]
+
+        # Create a third boxer
+        boxer3 = Boxers(name="Boxer Three", weight=150, height=190, reach=74, age=30)
+        db.session.add(boxer3)
+        db.session.commit()
+
+        # Try to add the third boxer to the full ring
         with pytest.raises(ValueError, match="Ring is full"):
-            ring_model.enter_ring(3)
+            ring_model.enter_ring(boxer3.id)
 #def test_enter_ring_full(): return True
 
 
 # --- Fight Logic ---
 
-# def test_get_fighting_skill(ring_model, sample_boxers):
-#     expected_1 = 210 * 12 + (78 / 10)
-#     expected_2 = 220 * 10 + (71 / 10) - 1
-#     assert ring_model.get_fighting_skill(sample_boxers[0]) == expected_1
-#     assert ring_model.get_fighting_skill(sample_boxers[1]) == expected_2
-def test_get_fighting_skill(): return True
+def test_get_fighting_skill(ring_model, sample_boxers):
+    expected_1 = 210 * 12 + (78 / 10)
+    expected_2 = 220 * 10 + (71 / 10) - 1
+    assert ring_model.get_fighting_skill(sample_boxers[0]) == expected_1
+    assert ring_model.get_fighting_skill(sample_boxers[1]) == expected_2
+#def test_get_fighting_skill(): return True
 
-# def test_fight(ring_model, sample_boxers, caplog, mocker):
-#     ring_model.ring.extend(sample_boxers)
-#     mocker.patch("boxing.models.ring_model.RingModel.get_fighting_skill", side_effect=[2526.8, 2206.1])
-#     mocker.patch("boxing.models.ring_model.get_random", return_value=0.42)
-#     mocker.patch("boxing.models.ring_model.RingModel.get_boxers", return_value=sample_boxers)
-#     mock_update = mocker.patch("boxing.models.ring_model.Boxers.update_stats")
-#     winner = ring_model.fight()
-#     assert winner == "Muhammad Ali"
-#     mock_update.assert_any_call("win")
-#     mock_update.assert_any_call("loss")
-#     assert ring_model.ring == []
-def test_fight(): return True
+def test_fight(ring_model, sample_boxers, caplog, mocker):
+    ring_model.ring.extend(sample_boxers)
+    mocker.patch("boxing.models.ring_model.RingModel.get_fighting_skill", side_effect=[2526.8, 2206.1])
+    mocker.patch("boxing.models.ring_model.get_random", return_value=0.42)
+    mocker.patch("boxing.models.ring_model.RingModel.get_boxers", return_value=sample_boxers)
+    mock_update = mocker.patch("boxing.models.ring_model.Boxers.update_stats")
+    winner = ring_model.fight()
+    assert winner == "Muhammad Ali"
+    mock_update.assert_any_call("win")
+    mock_update.assert_any_call("loss")
+    assert ring_model.ring == []
+# def test_fight(): return True
 
-# def test_fight_with_empty_ring(ring_model):
-#     with pytest.raises(ValueError, match="There must be two boxers to start a fight."):
-#         ring_model.fight()
-def test_fight_with_empty_ring(): return True
+def test_fight_with_empty_ring(ring_model):
+    with pytest.raises(ValueError, match="There must be two boxers to start a fight."):
+        ring_model.fight()
+#def test_fight_with_empty_ring(): return True
 
-# def test_fight_with_one_boxer(ring_model, sample_boxer1):
-#     ring_model.ring.append(sample_boxer1)
-#     with pytest.raises(ValueError, match="There must be two boxers to start a fight."):
-#         ring_model.fight()
-def test_fight_with_one_boxer(): return True
+def test_fight_with_one_boxer(ring_model, sample_boxer1):
+    ring_model.ring.append(sample_boxer1)
+    with pytest.raises(ValueError, match="There must be two boxers to start a fight."):
+        ring_model.fight()
+#def test_fight_with_one_boxer(): return True
 
-# def test_clear_cache(ring_model, sample_boxer1):
-#     ring_model._boxer_cache[sample_boxer1.id] = sample_boxer1
-#     ring_model._ttl[sample_boxer1.id] = time.time() + 100
-#     ring_model.clear_cache()
-#     assert ring_model._boxer_cache == {}
-#     assert ring_model._ttl == {}
-def test_clear_cache(): return True
+def test_clear_cache(ring_model, sample_boxer1):
+    ring_model._boxer_cache[sample_boxer1.id] = sample_boxer1
+    ring_model._ttl[sample_boxer1.id] = time.time() + 100
+    ring_model.clear_cache()
+    assert ring_model._boxer_cache == {}
+    assert ring_model._ttl == {}
+#def test_clear_cache(): return True
