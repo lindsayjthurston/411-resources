@@ -72,7 +72,7 @@ def create_app(config_class=ProductionConfig):
     #
     #########################################################
 
-    @app.route('/api/create-user', methods=['PUT'])
+    @app.route('/api/create-user', methods=['POST', 'PUT'])
     def create_user() -> Response:
         """Register a new user account.
 

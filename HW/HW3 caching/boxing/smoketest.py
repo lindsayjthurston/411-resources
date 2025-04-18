@@ -1,8 +1,14 @@
 import requests
-
+API_BASE = "http://localhost:5050/api"
 
 def run_smoketest():
-    base_url = "http://localhost:5000/api"
+    try:
+        session = requests.Session()
+        # All your other test logic...
+    except Exception as e:
+        print("Exception occurred:")
+        traceback.print_exc()
+    base_url = "http://localhost:5050/api"
     username = "test"
     password = "test"
 
