@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Copy the env file to the container
-COPY .env /app/.env
+# COPY .env /app/.env
 
 # Install any needed packages specified in requirements.txt
 # In production, you would want to ensure that any re-compiled packages
